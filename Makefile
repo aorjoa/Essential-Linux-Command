@@ -24,6 +24,8 @@ check: test
 	$(NODE) --check dist/app.js
 	$(NODE) --check dist/lessons.mjs
 	$(NODE) --check dist/shell.mjs
+	$(NODE) --check dist/env-model.mjs
+	$(NODE) --check dist/env-lesson.mjs
 	$(NODE) --check check-lessons.mjs
 	$(NODE) --check check-ui.mjs
 

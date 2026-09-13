@@ -31,7 +31,9 @@ function render(){
  $('step-description').textContent=s.description;$('analogy').textContent=s.analogy;
  $('code-kind').textContent=s.kind;$('packet-code').textContent=s.code;
  $('detail-note').textContent=s.note;
- document.querySelector('.address strong').textContent=scenario==='failure'?'typo.example.com':'www.example.com';
+ const hostname=scenario==='failure'?'typo.example.com':'www.example.com';
+ const initialAddress=document.querySelector('.address strong');if(initialAddress)initialAddress.textContent=hostname;
+ const browserAddress=document.getElementById('network-url');if(browserAddress){browserAddress.value='https://'+hostname+'/hello';browserAddress.setCustomValidity('');}
  if(scenario==='failure')$('packet-code').textContent=s.code.replaceAll('www.example.com','typo.example.com');
  if(key==='render'&&scenario==='edge'){$('step-description').textContent='The cached HTML comes straight back from the CDN. The browser parses it, fetches referenced resources, and turns it into the page you see. The origin was skipped for this request.';}
  document.querySelectorAll('.node').forEach(n=>{n.classList.toggle('active',n.dataset.node===s.node);n.setAttribute('aria-pressed',String(n.dataset.node===s.node));});

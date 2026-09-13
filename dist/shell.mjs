@@ -76,9 +76,32 @@ export class Shell {
   const [cmd,...a]=args,ok=output=>({output,code:0});
   if(/^[A-Za-z_]\w*=/.test(cmd)&&a.length===0){const pos=cmd.indexOf('=');this.vars[cmd.slice(0,pos)]=cmd.slice(pos+1);return ok('');}
   switch(cmd){
-   case 'help':return ok('Supported: pwd, ls [-a], cd, cat, echo, mkdir [-p], touch, cp, grep, wc -l, export, printenv, history, clear, bash, zsh, make.\nUse quotes, $VARIABLE, *.txt, |, > and >>.\nNo host commands, downloads, scripts, loops, or command substitution are executed.\n');
+   case 'help':return ok('Supported: pwd, ls [-al] [PATH], cd, cat, echo, mkdir [-p], touch, cp, grep, wc -l, export, printenv, history, clear, bash, zsh, make.\nLong listings use simulated permissions, owners, and timestamps; file sizes are UTF-8 bytes.\nUse quotes, $VARIABLE, *.txt, |, > and >>.\nNo host commands, downloads, scripts, loops, or command substitution are executed.\n');
    case 'pwd':return ok(this.cwd+'\n');
-   case 'ls':{if(a.some(x=>x.startsWith('-')&&x!=='-a'))throw Error('Supported option: ls -a');const paths=a.filter(x=>x!=='-a');if(paths.length>1)throw Error('Use one directory with ls.');return ok(this.children(paths[0]||'.',a.includes('-a')).join('  ')+'\n');}
+   case 'ls':{
+    let all=false,long=false,options=true;const paths=[];
+    for(const arg of a){
+     if(options&&arg==='--'){options=false;continue;}
+     if(options&&arg.startsWith('-')&&arg!=='-'){
+      for(const flag of arg.slice(1)){if(flag==='a')all=true;else if(flag==='l')long=true;else throw Error(`ls: unsupported option -${flag}. Supported: -a, -l, -la.`);}
+     }else paths.push(arg);
+    }
+    if(paths.length>1)throw Error('Use one file or directory with ls.');
+    const target=this.path(paths[0]||'.'),directory=this.dirs.has(target);
+    if(!directory&&!this.files.has(target))throw Error(`ls: ${paths[0]}: no such file or directory`);
+    const names=directory?[...(all?['.','..']:[]),...this.children(target,all)]:[paths[0]];
+    if(!long)return ok(names.join('  ')+'\n');
+    // Permissions, owners, and timestamps model the virtual filesystem only.
+    const rows=names.map(name=>{
+     const path=directory?this.path(target+'/'+name):target,isDir=this.dirs.has(path),file=this.files.get(path);
+     const links=isDir?2+this.children(path,true).filter(child=>this.dirs.has(this.path(path+'/'+child))).length:1;
+     const size=isDir?0:new TextEncoder().encode(file.text).length;
+     const time=new Date((file?.time||0)*1000).toISOString().slice(11,19);
+     return [isDir?'drwxr-xr-x':'-rw-r--r--',String(links),'learner','learner',String(size),'Jan 01',time,name];
+    });
+    const linkWidth=Math.max(1,...rows.map(row=>row[1].length)),sizeWidth=Math.max(1,...rows.map(row=>row[4].length));
+    return ok(rows.map(row=>{row[1]=row[1].padStart(linkWidth);row[4]=row[4].padStart(sizeWidth);return row.join(' ');}).join('\n')+(rows.length?'\n':''));
+   }
    case 'cd':{if(a.length>1)throw Error('cd: too many arguments');const p=this.path(a[0]||'~');if(!this.dirs.has(p))throw Error(`cd: ${a[0]}: no such directory`);this.cwd=p;return ok('');}
    case 'cat':{if(a.some(x=>x.startsWith('-')))throw Error('cat options are outside this simulator.');return ok(a.length?a.map(p=>this.read(p)).join(''):input);}
    case 'echo':return ok(a.join(' ')+'\n');

@@ -17,3 +17,37 @@ s.reset();run('make serve');run('make clean');assert.equal(s.files.has(s.path('d
 s.write('Makefile','all: all\n');assert.match(run('make',2),/Circular/);
 s.write('Makefile','welcome:\n\techo Hello\n');assert.match(run('make'),/Hello/);
 console.log('Passed: navigation, files, pipes, quoting, variables, shell differences, errors, dependency builds, failed tests, Makefile validation, preview and reset.');
+
+// Long listings, combined flags, hidden entries, and byte sizes.
+const listing=new Shell();
+listing.write('.hidden','é');
+listing.run('mkdir .cache');
+const ls=command=>{const result=listing.run(command);assert.equal(result.code,0,result.output);return result.output;};
+assert.doesNotMatch(ls('ls'),/\.hidden|\.cache/);
+assert.doesNotMatch(ls('ls -l'),/\.hidden|\.cache/);
+const detailed=ls('ls -la');
+assert.equal(detailed,ls('ls -al'));
+assert.equal(detailed,ls('ls -l -a'));
+assert.match(detailed,/^-rw-r--r--\s+1 learner learner\s+2 Jan 01 \d{2}:\d{2}:\d{2} \.hidden$/m);
+assert.match(detailed,/^drwxr-xr-x.* \.cache$/m);
+assert.match(detailed,/^drwxr-xr-x.* \.$/m);
+assert.match(detailed,/^drwxr-xr-x.* \.\.$/m);
+assert.match(ls('ls -la src'),/index.html/);
+assert.match(ls('ls -l notes.txt'),/notes.txt/);
+listing.write('-file','x');assert.match(ls('ls -l -- -file'),/-file/);
+assert.equal(listing.run('ls -lz').code,2);
+assert.equal(listing.run('ls missing').code,2);
+console.log('Passed: long listings, combined flags, hidden files and directories, UTF-8 sizes, paths, and option errors.');
+
+const {runEnv,parseEnv}=await import('./dist/env-model.mjs');
+const envFiles={'.env':'APP_NAME="Demo"\nPORT=3000','.env.local':'PORT=4000','.env.example':'APP_NAME=Example'};
+assert.equal(runEnv(envFiles).port,4000);
+assert.equal(runEnv(envFiles).sources.PORT,'.env.local');
+assert.equal(runEnv(envFiles,'custom').env.APP_NAME,'Example');
+assert.equal(runEnv(envFiles,'custom').port,3000);
+assert.match(runEnv(envFiles,'off').error,/APP_NAME/);
+assert.match(runEnv({'.env':'APP_NAME=Demo\nPORT=oops'}).error,/PORT/);
+assert.deepEqual(parseEnv('# comment\nNAME="Hello world"\nEMPTY='),{NAME:'Hello world',EMPTY:''});
+assert.throws(()=>parseEnv('NAME="unclosed'),/close/);
+assert.throws(()=>parseEnv('NAME=$OTHER'),/literal/);
+console.log('Passed: Bun lesson configuration loading, local overrides, explicit files, validation, and parser limits.');
