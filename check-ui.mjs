@@ -5,13 +5,17 @@ try{
 const page=await browser.newPage({viewport:{width:1440,height:1050}}),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 await page.goto('http://127.0.0.1:8765/#foundations');await page.locator('#api-send').waitFor();
+await page.fill('#browser-url','notes.example');await page.locator('#browser-url').press('Enter');
+await page.waitForFunction(()=>document.getElementById('browser-status').textContent==='Up to date');
+assert.equal(await page.locator('#browser-url').inputValue(),'https://notes.example/');
+assert.match(await page.locator('#api-response').innerText(),/200/);
 await page.selectOption('#api-scenario','create');await page.fill('#note-text','My API lesson');
 for(let i=0;i<6;i++)await page.click('#api-next');
 assert.match(await page.locator('#api-response').innerText(),/201/);assert.match(await page.locator('#api-screen').innerText(),/My API lesson/);
 await page.selectOption('#api-scenario','list');for(let i=0;i<6;i++)await page.click('#api-next');assert.match(await page.locator('#api-response').innerText(),/My API lesson/);
 await page.selectOption('#api-scenario','invalid');for(let i=0;i<6;i++)await page.click('#api-next');assert.match(await page.locator('#api-screen').innerText(),/must not be empty/);
 await page.selectOption('#api-scenario','auth');for(let i=0;i<6;i++)await page.click('#api-next');assert.match(await page.locator('#api-response').innerText(),/401/);
-await page.click('#api-reset');await page.selectOption('#api-scenario','list');await page.screenshot({path:'/private/tmp/arise-foundations.png',fullPage:true});
+await page.click('#api-reset');await page.fill('#browser-note','Added from the browser');await page.click('#browser-add');assert.equal(await page.locator('#browser-add').isDisabled(),true);await page.waitForFunction(()=>document.getElementById('browser-status').textContent==='Up to date');assert.match(await page.locator('#api-screen').innerText(),/Added from the browser/);await page.click('#browser-reload');await page.waitForFunction(()=>document.getElementById('browser-status').textContent==='Up to date');assert.match(await page.locator('#api-request').innerText(),/GET \/api\/notes/);assert.match(await page.locator('#api-screen').innerText(),/Added from the browser/);await page.fill('#browser-note','');await page.click('#browser-add');await page.waitForFunction(()=>document.getElementById('browser-status').textContent==='Request failed');assert.match(await page.locator('#api-response').innerText(),/422/);await page.click('#browser-reload');await page.waitForFunction(()=>document.getElementById('browser-status').textContent==='Up to date');await page.screenshot({path:'/private/tmp/arise-foundations.png',fullPage:true});
 await page.click('#tab-shell');await page.fill('#shell-command','cat access.log | grep 200 | wc -l');await page.locator('#shell-command').press('Enter');assert.match(await page.locator('#shell-output').innerText(),/\n3\n/);
 await page.selectOption('#shell-mode','zsh');await page.fill('#shell-command','echo *.csv');await page.locator('#shell-command').press('Enter');assert.match(await page.locator('#shell-output').innerText(),/no matches found/);
 await page.click('#tab-workflow');await page.fill('#editor-text','<h1>My first build</h1>');await page.click('#editor-save');await page.click('[data-work="make build"]');await page.click('[data-work="make build"]');assert.match(await page.locator('#work-output').innerText(),/up to date/);await page.click('[data-work="make serve"]');assert.equal(await page.frameLocator('#work-preview').locator('h1').innerText(),'My first build');assert.match(await page.locator('#work-feedback').innerText(),/Complete/);
