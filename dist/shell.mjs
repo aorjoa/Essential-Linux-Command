@@ -1,0 +1,119 @@
+// A deliberately bounded teaching model. Commands never reach the host OS.
+export const MAKEFILE = `.PHONY: all build test serve clean
+all: test build
+
+build: dist/index.html
+
+dist/index.html: src/index.html
+\tmkdir -p dist
+\tcp src/index.html dist/index.html
+
+test:
+\tnode scripts/check.js
+
+serve: build
+\tpreview dist/index.html
+
+clean:
+\tremove-build
+`;
+export class Shell {
+ constructor(){this.reset();}
+ reset(){
+  this.cwd='/home/learner/project';this.home='/home/learner';this.shell='bash';this.env={HOME:this.home,USER:'learner',SHELL:'/bin/bash'};this.vars={};this.files=new Map();this.dirs=new Set(['/','/home',this.home,this.cwd,this.cwd+'/src',this.cwd+'/scripts']);this.clock=1;this.history=[];this.served=false;this.events=[];
+  this.write('src/index.html','<h1>Hello, Arise!</h1>\n<p>Built from a source file.</p>\n');
+  this.write('README.md','Arise practice project\nEdit src/index.html, then run make.\n');
+  this.write('access.log','200 GET /\n200 GET /style.css\n404 GET /missing\n200 GET /api/notes\n');
+  this.write('notes.txt','DNS finds an address.\nHTTP carries messages.\nTLS encrypts the connection.\n');
+  this.write('Makefile',MAKEFILE);this.write('scripts/check.js',"// Teaching check: source must contain a non-empty <h1>.\n// Simulated by this lesson; arbitrary JavaScript is not executed.\n");
+  this.write('../.bashrc','# Bash interactive configuration\n');this.write('../.zshrc','# Zsh interactive configuration\n');
+ }
+ path(value='.'){const raw=value==='~'?this.home:value.startsWith('~/')?this.home+value.slice(1):value;const parts=(raw.startsWith('/')?raw:this.cwd+'/'+raw).split('/'),out=[];for(const p of parts){if(p==='..')out.pop();else if(p&&p!=='.')out.push(p);}return '/'+out.join('/');}
+ read(path){const f=this.files.get(this.path(path));if(!f)throw Error(`${path}: no such file`);return f.text;}
+ write(path,text){const p=this.path(path),parent=p.slice(0,p.lastIndexOf('/'))||'/';if(!this.dirs.has(parent))throw Error(`${parent}: no such directory`);if(this.dirs.has(p))throw Error(`${path}: is a directory`);if(text.length>50000)throw Error('Simulation limit: files may contain up to 50,000 characters.');this.files.set(p,{text,time:++this.clock});}
+ children(path=this.cwd,hidden=false){const p=this.path(path),prefix=p==='/'?'/':p+'/';if(!this.dirs.has(p))throw Error(`${path}: no such directory`);return [...new Set([...this.dirs,...this.files.keys()].filter(x=>x.startsWith(prefix)&&x!==p).map(x=>x.slice(prefix.length).split('/')[0]))].filter(x=>hidden||!x.startsWith('.')).sort();}
+ lex(line){
+  const tokens=[];let value='',quote='',started=false,literal=false;
+  const emit=()=>{if(started)tokens.push({value,literal});value='';started=false;literal=false;};
+  for(let i=0;i<line.length;i++){
+   const c=line[i];
+   if(c===quote&&quote){quote='';continue;}
+   if(!quote&&(c==='"'||c==="'")){quote=c;started=true;literal=true;continue;}
+   if(c==='\\'&&quote!=="'"){if(i+1>=line.length)throw Error('A trailing backslash needs another character.');value+=line[++i];started=true;literal=true;continue;}
+   if(c==='$'&&quote!=="'"){
+    if(line[i+1]==='(')throw Error('Command substitution is outside this introductory simulator.');
+    const match=line.slice(i+1).match(/^(?:\{([A-Za-z_][\w]*)\}|([A-Za-z_][\w]*))/);
+    if(match){const expansion=this.vars[match[1]||match[2]]??this.env[match[1]||match[2]]??'';i+=match[0].length;
+     if(!quote&&this.shell==='bash'){const parts=expansion.split(/\s+/);value+=parts.shift()||'';started=started||!!value;for(const part of parts){emit();value=part;started=!!part;}}else{value+=expansion;started=true;}continue;}
+   }
+   if(!quote&&/\s/.test(c)){emit();continue;}
+   if(!quote&&['|','>'].includes(c)){emit();let op=c;if(line[i+1]===c){op+=c;i++;}tokens.push({op});continue;}
+   if(!quote&&[';','&','<','`'].includes(c))throw Error('This simulator supports one command or pipeline, with > or >>. Compound commands and substitutions are not supported.');
+   value+=c;started=true;
+  }
+  if(quote)throw Error('Unclosed quote. Add the matching quote and try again.');emit();return tokens;
+ }
+ expand(token){
+  const v=token.value;if(token.literal||!v.includes('*'))return [v];
+  const split=v.lastIndexOf('/'),dir=split<0?'.':v.slice(0,split)||'/',pattern=v.slice(split+1);
+  const re=new RegExp('^'+pattern.split('*').map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('.*')+'$');
+  const matches=this.children(dir,pattern.startsWith('.')).filter(n=>re.test(n)).map(n=>split<0?n:v.slice(0,split+1)+n);
+  if(!matches.length&&this.shell==='zsh')throw Error(`zsh: no matches found: ${v}`);return matches.length?matches:[v];
+ }
+ run(line){
+  if(!line.trim())return {output:'',code:0};if(line.length>2000)return {output:'Command is too long for this simulator.',code:2};
+  this.history.push(line);let output='',code=0;
+  try{
+   const tokens=this.lex(line);let dest=null,append=false;const redirect=tokens.findIndex(t=>t.op==='>'||t.op==='>>');
+   if(redirect>=0){if(redirect!==tokens.length-2||tokens.at(-1).op)throw Error('Use one filename after > or >>, at the end of the command.');dest=tokens.at(-1).value;append=tokens[redirect].op==='>>';tokens.splice(redirect);}
+   const groups=[[]];for(const t of tokens){if(t.op==='|')groups.push([]);else if(t.op)throw Error('Only a single | pipe is supported.');else groups.at(-1).push(...this.expand(t));}
+   for(const args of groups){if(!args.length)throw Error('A pipe needs a command on both sides.');if(groups.length>1&&['cd','export','mkdir','touch','cp','make','bash','zsh','clear'].includes(args[0]))throw Error('Use this command on its own; this simulator pipes text-processing commands only.');const r=this.command(args,output);output=r.output;code=r.code||0;}
+   if(dest!==null){const p=this.path(dest);this.write(p,(append&&this.files.has(p)?this.read(p):'')+output);output='';}
+  }catch(e){output=e.message+'\n';code=2;}
+  const result={output,code};this.events.push({line,...result});return result;
+ }
+ command(args,input=''){
+  const [cmd,...a]=args,ok=output=>({output,code:0});
+  if(/^[A-Za-z_]\w*=/.test(cmd)&&a.length===0){const pos=cmd.indexOf('=');this.vars[cmd.slice(0,pos)]=cmd.slice(pos+1);return ok('');}
+  switch(cmd){
+   case 'help':return ok('Supported: pwd, ls [-a], cd, cat, echo, mkdir [-p], touch, cp, grep, wc -l, export, printenv, history, clear, bash, zsh, make.\nUse quotes, $VARIABLE, *.txt, |, > and >>.\nNo host commands, downloads, scripts, loops, or command substitution are executed.\n');
+   case 'pwd':return ok(this.cwd+'\n');
+   case 'ls':{if(a.some(x=>x.startsWith('-')&&x!=='-a'))throw Error('Supported option: ls -a');const paths=a.filter(x=>x!=='-a');if(paths.length>1)throw Error('Use one directory with ls.');return ok(this.children(paths[0]||'.',a.includes('-a')).join('  ')+'\n');}
+   case 'cd':{if(a.length>1)throw Error('cd: too many arguments');const p=this.path(a[0]||'~');if(!this.dirs.has(p))throw Error(`cd: ${a[0]}: no such directory`);this.cwd=p;return ok('');}
+   case 'cat':{if(a.some(x=>x.startsWith('-')))throw Error('cat options are outside this simulator.');return ok(a.length?a.map(p=>this.read(p)).join(''):input);}
+   case 'echo':return ok(a.join(' ')+'\n');
+   case 'mkdir':{const recursive=a[0]==='-p',paths=recursive?a.slice(1):a;if(!paths.length)throw Error('mkdir needs a directory name');for(const name of paths){if(name.startsWith('-'))throw Error('Supported option: mkdir -p');const p=this.path(name);if(this.files.has(p))throw Error(`${name}: file exists`);if(recursive){const bits=p.split('/').filter(Boolean);let cur='';for(const b of bits){cur+='/'+b;if(this.files.has(cur))throw Error(`${cur}: is a file`);this.dirs.add(cur);}}else{if(this.dirs.has(p))throw Error(`${name}: directory exists`);const parent=p.slice(0,p.lastIndexOf('/'))||'/';if(!this.dirs.has(parent))throw Error(`${parent}: no such directory`);this.dirs.add(p);}}return ok('');}
+   case 'touch':{if(!a.length)throw Error('touch needs a filename');for(const p of a)this.write(p,this.files.get(this.path(p))?.text||'');return ok('');}
+   case 'cp':{if(a.length!==2)throw Error('Use cp SOURCE DESTINATION');const dest=this.dirs.has(this.path(a[1]))?a[1]+'/'+a[0].split('/').at(-1):a[1];this.write(dest,this.read(a[0]));return ok('');}
+   case 'grep':{if(!a.length||a[0].startsWith('-'))throw Error('Use grep PATTERN [FILE]. This simulator matches literal text.');const text=a.length>1?a.slice(1).map(p=>this.read(p)).join(''):input;const lines=text.replace(/\n$/,'').split('\n').filter(l=>l.includes(a[0]));return {output:lines.length?lines.join('\n')+'\n':'',code:lines.length?0:1};}
+   case 'wc':{if(a[0]!=='-l'||a.length>2)throw Error('Use wc -l [FILE]');const text=a[1]?this.read(a[1]):input;return ok(String((text.match(/\n/g)||[]).length)+'\n');}
+   case 'export':{if(a.length!==1||!/^([A-Za-z_]\w*)(=.*)?$/.test(a[0]))throw Error('Use export NAME=value or export NAME');const pos=a[0].indexOf('='),name=pos<0?a[0]:a[0].slice(0,pos);this.env[name]=pos<0?(this.vars[name]??this.env[name]??''):a[0].slice(pos+1);delete this.vars[name];return ok('');}
+   case 'printenv':return a[0]?(this.env[a[0]]===undefined?{output:'',code:1}:ok(this.env[a[0]]+'\n')):ok(Object.entries(this.env).map(([k,v])=>k+'='+v).join('\n')+'\n');
+   case 'history':return ok(this.history.map((x,i)=>`${i+1}  ${x}`).join('\n')+'\n');
+   case 'clear':return ok('');
+   case 'bash':case 'zsh':{if(a.length)throw Error('Shell scripts are outside this simulator. Use bash or zsh to switch modes.');this.shell=cmd;this.env.SHELL='/bin/'+cmd;return ok(`Switched simulation to ${cmd}. Directory and variables retained.\n`);}
+   case 'make':{if(a.length>1)throw Error('Use one Make target at a time.');return this.make(a[0]);}
+   case 'node':{if(a.join(' ')!=='scripts/check.js')throw Error('Only the lesson’s fixed scripts/check.js check is simulated.');const pass=/<h1>\s*[^<\s][\s\S]*?<\/h1>/.test(this.read('src/index.html'));return {output:pass?'PASS: source has a non-empty h1.\n':'FAIL: add a non-empty <h1> heading to src/index.html.\n',code:pass?0:1};}
+   case 'preview':{if(a.join(' ')!=='dist/index.html')throw Error('Preview supports dist/index.html only.');this.read(a[0]);this.served=true;return ok('Serving a simulated snapshot of dist/index.html. See the browser preview panel.\n');}
+   case 'remove-build':{this.files.delete(this.path('dist/index.html'));this.served=false;return ok('Removed the simulated build artifact.\n');}
+   default:return {output:`${this.shell}: ${cmd}: command not found in this simulator. Type help.\n`,code:127};
+  }
+ }
+ make(target){
+  // Parse the lesson's Makefile subset rather than hard-code a target sequence.
+  const rules=new Map(),phony=new Set();let current=null;
+  for(const line of this.read('Makefile').split('\n')){
+   if(!line.trim()||line.trimStart().startsWith('#'))continue;
+   if(line.startsWith('\t')){if(!current)throw Error('Makefile: recipe without a target');rules.get(current).recipes.push(line.trim());continue;}
+   if(line.startsWith(' '))throw Error('Makefile: recipe lines must begin with a TAB, not spaces.');
+   const m=line.match(/^([\w./-]+):\s*(.*)$/);if(!m)throw Error('This Makefile simulator supports targets, prerequisites, .PHONY, and tab-indented recipes.');
+   if(m[1]==='.PHONY'){m[2].split(/\s+/).filter(Boolean).forEach(x=>phony.add(x));current=null;}else{current=m[1];rules.set(current,{deps:m[2].split(/\s+/).filter(Boolean),recipes:[]});}
+  }
+  target=target||rules.keys().next().value;if(!target)throw Error('Makefile has no targets.');
+  let output='';const done=new Set(),visiting=new Set();
+  const build=t=>{if(done.has(t))return;if(visiting.has(t))throw Error(`Circular dependency at ${t}`);const r=rules.get(t),file=this.files.get(this.path(t));if(!r){if(file)return;throw Error(`No rule to make target '${t}'.`);}visiting.add(t);r.deps.forEach(build);visiting.delete(t);
+   const stale=phony.has(t)||!file||r.deps.some(d=>phony.has(d)||(this.files.get(this.path(d))?.time||0)>file.time);
+   if(stale){for(const recipe of r.recipes){if(recipe.startsWith('make '))throw Error('Recursive make is outside this simulator.');output+='$ '+recipe+'\n';const res=this.command(this.lex(recipe).flatMap(x=>{if(x.op)throw Error('Recipe pipes and redirection are outside this simulator.');return this.expand(x);}));output+=res.output;if(res.code)throw Error(`Recipe failed; remaining targets were not run.\n${output}`);}}done.add(t);};
+  build(target);return {output:output||`make: '${target}' is up to date; no recipe needed.\n`,code:0};
+ }
+}
