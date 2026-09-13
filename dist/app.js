@@ -16,13 +16,13 @@ const stages = {
  failed:{title:'No address. No connection.',section:'DNS ERROR',icon:'!',node:'auth',path:'p-answer',description:'In this simulated failure, the authoritative server returns NXDOMAIN: this hostname does not exist. Without an IP address, the browser cannot begin its connection to the website.',analogy:'The directory says there is no such address. Your envelope cannot be delivered until the name is corrected.',kind:'DNS RESPONSE',code:'question  typo.example.com\nstatus    NXDOMAIN\nHTTP      not reached',note:'This differs from HTTP 404: a 404 means you reached a server, but it could not find the requested resource.'}
 };
 const routes={cold:['url','resolver','root','tld','auth','connect','tls','http','lb','server','render'],warm:['url','cached','connect','tls','http','lb','server','render'],edge:['url','resolver','root','tld','auth','connect','tls','edgehit','render'],failure:['url','resolver','root','tld','failed']};
-let scenario='cold',index=0,playing=false,timer=null,speed=1;
+let scenario='cold',index=0,playing=false,stepMotion=false,timer=null,speed=1;
 const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const route=()=>routes[scenario];
 function schedule(){clearTimeout(timer);if(playing)timer=setTimeout(()=>{if(index<route().length-1){index++;render();schedule();}else{playing=false;render();}},6000/speed);}
-function setPlaying(value){playing=value;render();schedule();}
-function goTo(value){index=Math.max(0,Math.min(value,route().length-1));playing=false;clearTimeout(timer);render();}
-function setScenario(value){if(!Object.hasOwn(routes,value))throw new Error('Unknown scenario');scenario=value;$('scenario').value=value;index=0;playing=false;clearTimeout(timer);render();}
+function setPlaying(value){stepMotion=false;playing=value;render();schedule();}
+function goTo(value){stepMotion=true;index=Math.max(0,Math.min(value,route().length-1));playing=false;clearTimeout(timer);render();}
+function setScenario(value){if(!Object.hasOwn(routes,value))throw new Error('Unknown scenario');scenario=value;stepMotion=false;$('scenario').value=value;index=0;playing=false;clearTimeout(timer);render();}
 function render(){
  const key=route()[index],s=stages[key];
  $('stage-label').textContent=String(index+1).padStart(2,'0')+' — '+s.section;
@@ -42,8 +42,9 @@ function render(){
  $('packet-motion').setAttribute('path',path||'M0 0');$('packet-motion').setAttribute('dur',`${2/speed}s`);
  if($('packet-motion').beginElement)$('packet-motion').beginElement();
  const svg=document.querySelector('.connections');
- document.body.classList.toggle('paused',!playing);
- if(playing&&!reducedMotion)svg.unpauseAnimations();else svg.pauseAnimations();
+ const animateConnection=(playing||stepMotion)&&!reducedMotion;
+ document.body.classList.toggle('paused',!animateConnection);
+ if(animateConnection)svg.unpauseAnimations();else svg.pauseAnimations();
  $('play').innerHTML=playing?'Ⅱ <span>Pause</span>':index===route().length-1?'↺ <span>Replay</span>':'▶ <span>Play journey</span>';
  $('play').setAttribute('aria-label',playing?'Pause animation':'Play animation');
  $('back').disabled=index===0;$('next').disabled=index===route().length-1;
