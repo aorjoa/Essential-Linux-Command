@@ -1,0 +1,14 @@
+{
+  "name": "try-makefile",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun scripts/check.js",
+    "build": "bun scripts/build.js",
+    "start": "bun scripts/start.js",
+    "serve": "bun scripts/start.js",
+    "clean": "bun scripts/clean.js",
+    "format": "bun scripts/format.js"
+  }
+}

@@ -51,3 +51,37 @@ assert.deepEqual(parseEnv('# comment\nNAME="Hello world"\nEMPTY='),{NAME:'Hello 
 assert.throws(()=>parseEnv('NAME="unclosed'),/close/);
 assert.throws(()=>parseEnv('NAME=$OTHER'),/literal/);
 console.log('Passed: Bun lesson configuration loading, local overrides, explicit files, validation, and parser limits.');
+
+const {readFile}=await import('node:fs/promises');
+const {WORKFLOW_NAME,WORKFLOW_FILES}=await import('./dist/workflow-project.mjs');
+const workflowFiles=Object.fromEntries(await Promise.all(WORKFLOW_FILES.map(async file=>[file,await readFile(new URL('./dist/projects/try-makefile/'+file,import.meta.url),'utf8')])));
+const workflow=new Shell({projectName:WORKFLOW_NAME,files:workflowFiles});
+assert.equal(workflow.cwd,'/home/learner/try-makefile');
+for(const command of ['make','make build','make serve','bun run test','bun run build','bun run start','bun run clean'])assert.equal(workflow.run(command).code,0,command);
+assert.equal(workflow.files.has(workflow.path('dist/index.html')),false);
+workflow.write('scripts/build.js','// edited');assert.match(workflow.run('bun run build').output,/changed/);
+workflow.reset();assert.equal(workflow.read('scripts/build.js'),workflowFiles['scripts/build.js']);
+assert.equal(workflow.run('make').code,0);
+workflow.write('src/index.html','<p>Broken</p>');assert.match(workflow.run('make').output,/FAIL/);
+const {projectZip}=await import('./dist/zip.mjs');
+assert.throws(()=>projectZip([['../outside','bad']]),/Invalid ZIP path/);
+console.log('Passed: try-makefile Bun simulation, project reset, edited script boundary, and ZIP path validation.');
+
+workflow.reset();
+workflow.write('scripts/hello.sh','#!/bin/sh\necho "Hello Ariser!"\n');
+assert.equal(workflow.run('sh scripts/hello.sh').output,'Hello Ariser!\n');
+assert.match(workflow.run('make hello').output,/Hello Ariser!/);
+assert.equal(workflow.run('echo "a && b" && echo done').output,'a && b\ndone\n');
+assert.equal(workflow.run('echo first && unknown && echo never').output.includes('never'),false);
+workflow.write('scripts/dev.sh','#!/bin/sh\nbun run format && bun run test && bun run start\n');
+workflow.write('src/index.html','<h1>Formatted</h1>   \r\n\n');
+const chain=workflow.run('sh scripts/dev.sh');assert.equal(chain.code,0);assert.match(chain.output,/Formatted[\s\S]*PASS[\s\S]*Serving/);
+assert.equal(workflow.read('src/index.html'),'<h1>Formatted</h1>\n');
+const artifact=workflow.read('dist/index.html');workflow.write('src/index.html','<p>Broken</p>');
+const stopped=workflow.run('sh scripts/dev.sh');assert.notEqual(stopped.code,0);assert.match(stopped.output,/FAIL/);assert.doesNotMatch(stopped.output,/Built|Serving/);assert.equal(workflow.read('dist/index.html'),artifact);
+workflow.write('scripts/hello.sh','sh scripts/hello.sh');assert.match(workflow.run('sh scripts/hello.sh').output,/Recursive/);
+workflow.write('scripts/hello.sh','cd src\npwd');assert.equal(workflow.run('sh scripts/hello.sh').output,'/home/learner/try-makefile/src\n');assert.equal(workflow.cwd,workflow.projectRoot);
+console.log('Passed shell script execution, quoted &&, short-circuit chains, formatting, recursion guard, and script directory isolation.');
+
+assert.equal(workflow.run('export GREETING=Ariser && echo "$GREETING"').output,'Ariser\n');
+assert.equal(workflow.run('echo "escaped \\&\\& literal" && echo done').output,'escaped && literal\ndone\n');

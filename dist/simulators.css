@@ -89,8 +89,8 @@
 @media(max-width:950px){.shell-tools{grid-template-columns:minmax(0,1fr)}.shell-tools .finder-body{min-height:230px}}
 @media(max-width:650px){.shell-tools .finder-body{grid-template-columns:minmax(0,1fr)}#lesson-shell .task-picker{grid-template-columns:minmax(0,1fr)}}
 
-.ide-titlebar :is(#work-reset,#env-reset){font:11px/1.5 system-ui;min-height:28px;padding:4px 9px;border-color:#4b4d57;background:#34353d;white-space:nowrap}
-.ide-titlebar :is(#work-reset,#env-reset):hover{background:#454751}
+.ide-titlebar :is(#work-reset,#work-download,#env-reset){font:11px/1.5 system-ui;min-height:28px;padding:4px 9px;border-color:#4b4d57;background:#34353d;white-space:nowrap}
+.ide-titlebar :is(#work-reset,#work-download,#env-reset):hover{background:#454751}
 @media(max-width:700px){.ide-titlebar{flex-wrap:wrap}.ide-titlebar .simulation-badge{display:inline}.ide-titlebar .window-title{min-width:110px}}
 
 .env-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.env-workspace .editor{border:0;border-radius:0}.env-workspace .code-pane{border:0;border-left:1px solid #373941;border-radius:0}.env-workspace textarea{min-height:290px}.env-table{width:100%;border-collapse:collapse;font:12px/1.7 system-ui}.env-table th{text-align:left;color:#bac8df}.env-table td,.env-table th{padding:10px 5px;border-bottom:1px solid #364353;overflow-wrap:anywhere}.env-table{table-layout:fixed}.env-note{font:12px/1.7 system-ui;color:#aeb9cb}.env-run-form{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:12px 14px}.env-run-form label{font-size:12px}.env-run-form select{min-width:0;max-width:100%;flex:1;font:12px monospace}.env-run-form button{min-height:34px}#env-output{margin:0;height:180px}#env-reset{font:11px system-ui;min-height:28px;padding:5px 9px}
@@ -120,3 +120,20 @@
 .env-commands button:hover{background:#303138;border-color:#82aaff}.env-commands code{font:12px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;color:#e7bc89;overflow-wrap:anywhere}.env-commands button span{font:12px/1.6 system-ui;color:#aeb9cb}
 .learning-grid>aside.env-practice{display:block}.env-practice .env-note{font:12px/1.7 system-ui;color:#aeb9cb}.env-example-detail{border-top:1px solid #3b4756;margin-top:20px;padding-top:20px}
 .env-example-detail h3{font-size:20px;line-height:1.4;margin:10px 0}.env-example-detail ol{padding-left:20px;color:#c6d1df;font-size:15px;line-height:1.8}.env-example-detail li+li{margin-top:10px}.env-example-detail .challenge{margin-top:18px}.env-example-detail .challenge p,.env-example-detail #env-feedback{font-size:14px;overflow-wrap:anywhere}.env-example-detail .lesson-controls button{font-size:12px;padding:8px 10px}
+
+#lesson-workflow .ide-titlebar{flex-wrap:wrap}
+#lesson-workflow .ide-workspace{grid-template-columns:165px minmax(0,1fr)}
+#lesson-workflow .file-explorer button{padding-left:10px;font-size:11px;overflow-wrap:anywhere}
+#lesson-workflow .workflow-download-help{font-size:14px}
+@media(max-width:700px){#lesson-workflow .ide-workspace{grid-template-columns:minmax(0,1fr)}}
+
+.learning-grid>aside.work-practice{display:block}
+.work-practice .workflow-download-help{font:12px/1.7 system-ui;color:#aeb9cb}
+.work-scenario-detail{margin-top:18px;padding-top:18px;border-top:1px solid #3b4756}
+.work-scenario-detail h3{font-size:20px;line-height:1.4}.work-scenario-detail .check-list li{font-size:14px;padding:10px 0}.work-scenario-detail .challenge p,.work-scenario-detail #work-feedback{font-size:14px;overflow-wrap:anywhere}
+.work-command-picker{display:grid;gap:8px;margin:16px 0}.work-command-picker button{background:#25262b;border:1px solid #41434b;border-radius:5px;padding:10px;text-align:left;color:#e7bc89;font:12px/1.7 monospace;overflow-wrap:anywhere}.work-command-picker button:hover{border-color:#82aaff}
+.work-scenario-detail .secondary{font-size:12px;padding:8px 10px}.work-scenario-detail .hint-code{font-size:12px;overflow-wrap:anywhere}
+#lesson-workflow .file-explorer{max-height:425px;overflow:auto}
+@media(max-width:700px){#lesson-workflow .file-explorer{max-height:150px}}
+
+@media(max-width:700px){#work-files{display:contents}}
