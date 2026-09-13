@@ -9,7 +9,7 @@ run('export NAME=Arise');assert.equal(run('echo "$NAME"').trim(),'Arise');assert
 run('echo "Hello Arise" > greeting.txt');run('echo again >> greeting.txt');assert.equal(run('cat greeting.txt'),'Hello Arise\nagain\n');
 assert.equal(run('echo *.csv').trim(),'*.csv');run('zsh');assert.match(run('echo *.csv',2),/no matches/);run('bash');
 run('cat nope.txt',2);run('grep absent notes.txt',1);run('curl example.com',127);run('echo $(pwd)',2);run('echo "unclosed',2);
-assert.match(run('make'),/PASS/);assert.match(run('make build'),/up to date/);
+assert.match(run('make'),/PASS/);assert.match(run('make build'),/Nothing to be done/);
 s.write('src/index.html','<h1>Changed</h1>');assert.match(run('make build'),/cp src/);assert.equal(s.read('dist/index.html'),'<h1>Changed</h1>');run('make serve');assert.equal(s.served,true);
 s.write('src/index.html','<p>No heading</p>');assert.match(run('make',2),/FAIL/);assert.equal(s.read('dist/index.html'),'<h1>Changed</h1>');
 s.write('Makefile','all:\n  echo wrong');assert.match(run('make',2),/TAB/);

@@ -16,9 +16,9 @@ try{
  await page.click('#work-next');assert.deepEqual(await page.locator('[data-editor-file]').evaluateAll(buttons=>buttons.map(button=>button.dataset.editorFile)),['Makefile','scripts/hello.sh','README.md']);await save('Makefile','.PHONY: hello\nhello:\n\tsh scripts/hello.sh\n');await run('make hello');await done(1);
  await page.click('#work-next');await save('src/index.html','<h1>Hello Ariser!</h1>');await run('make build');await run('make build');await run('make serve');await done(2);assert.equal(await page.frameLocator('#work-preview').locator('h1').innerText(),'Hello Ariser!');
  await page.click('#work-next');await run('bun run test');assert.equal(await page.locator('#work-scenarios .done').count(),3);await save('src/index.html','<p>broken</p>');await run('bun run test');assert.match(await page.locator('#work-output').innerText(),/FAIL/);await save('src/index.html','<h1>Fixed</h1>');await run('bun run test');await done(3);
- await page.click('#work-next');await save('scripts/dev.sh','#!/bin/sh\nbun run format && bun run test && bun run start\n');await run('sh scripts/dev.sh');assert.match(await page.locator('#work-feedback').innerText(),/chain succeeded/);
+ await page.click('#work-next');await save('Makefile','.PHONY: dev\ndev:\n\tbun run format\n\tbun run test\n\tbun run start\n');await run('make dev');assert.match(await page.locator('#work-feedback').innerText(),/chain succeeded/);
  await page.selectOption('#editor-file','src/index.html');assert.ok(!(await page.locator('#editor-text').inputValue()).split('\n').some(line=>/[\t ]+$/.test(line)));
- await save('src/index.html','<p>No heading</p>   ');await run('sh scripts/dev.sh');await done(4);assert.match(await page.locator('#work-feedback').innerText(),/All five/);
+ await save('src/index.html','<p>No heading</p>   ');await run('make dev');await done(4);assert.match(await page.locator('#work-feedback').innerText(),/All five/);
  await page.click('[data-work-scenario="0"]');assert.equal(await page.locator('#work-scenarios .done').count(),5);assert.doesNotMatch(await page.locator('#editor-text').inputValue(),/echo/);
  await page.click('#work-restart');assert.equal(await page.locator('#work-scenarios .done').count(),4);
  await page.screenshot({path:'/private/tmp/workflow-scenarios.png',fullPage:true});

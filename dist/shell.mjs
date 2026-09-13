@@ -211,6 +211,6 @@ export class Shell {
   const build=t=>{if(done.has(t))return;if(visiting.has(t))throw Error(`Circular dependency at ${t}`);const r=rules.get(t),file=this.files.get(this.path(t));if(!r){if(file)return;throw Error(`No rule to make target '${t}'.`);}visiting.add(t);r.deps.forEach(build);visiting.delete(t);
    const stale=phony.has(t)||!file||r.deps.some(d=>phony.has(d)||(this.files.get(this.path(d))?.time||0)>file.time);
    if(stale){for(const recipe of r.recipes){if(recipe.startsWith('make '))throw Error('Recursive make is outside this simulator.');output+='$ '+recipe+'\n';const res=this.initialFiles?this.executeLine(recipe):this.command(this.lex(recipe).flatMap(x=>{if(x.op)throw Error('Recipe pipes and redirection are outside this simulator.');return this.expand(x);}));output+=res.output;if(res.code)throw Error(`Recipe failed; remaining targets were not run.\n${output}`);}}done.add(t);};
-  build(target);return {output:output||`make: '${target}' is up to date; no recipe needed.\n`,code:0};
+  build(target);return {output:output||`make: Nothing to be done for \`${target}'.\n`,code:0};
  }
 }

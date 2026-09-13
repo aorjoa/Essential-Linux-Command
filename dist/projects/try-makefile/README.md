@@ -59,7 +59,7 @@ The browser models the supplied Bun scripts instead of executing JavaScript. Sup
 2. **A Make recipe:** make the `hello` target run `sh scripts/hello.sh`, using a TAB before the recipe. Run `make hello`.
 3. **Serve with Bun:** edit the heading in `src/index.html`, then run `make build` and `make serve` (or `bun run start`).
 4. **Break and fix a test:** remove the heading, run `bun run test` to see a failure, restore the heading, and run the test again.
-5. **Format and chain:** add `bun run format && bun run test && bun run start` to `scripts/dev.sh`, then run `sh scripts/dev.sh`. Each command runs only if the previous command succeeds; the server must be last because it keeps running.
+5. **Format, test, then serve:** add a `.PHONY: dev` declaration and a `dev` target to `Makefile`, with three TAB-indented recipe lines: `bun run format`, `bun run test`, and `bun run start`. Run `make dev`. Make stops if a recipe line fails; the server must be last because it keeps running.
 
 The formatter removes trailing spaces/tabs, normalizes line endings, and adds one final newline. It does not re-indent HTML. It has no package dependencies.
 
