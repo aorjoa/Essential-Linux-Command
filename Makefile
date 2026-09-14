@@ -27,6 +27,7 @@ check: test
 	$(NODE) --check dist/lessons.mjs
 	$(NODE) --check dist/make-slides.mjs
 	$(NODE) --check dist/foundation-slides.mjs
+	$(NODE) --check dist/shell-slides.mjs
 	$(NODE) --check dist/workflow-guide.mjs
 	$(NODE) --check dist/shell.mjs
 	$(NODE) --check dist/workflow-project.mjs

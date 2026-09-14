@@ -272,8 +272,8 @@
   #lesson-workflow .practice-selection .task-picker { grid-template-columns: minmax(0,1fr); }
 }
 
-.foundation-slide-count { font: 12px/1.5 monospace; color: #a9bcd4; white-space: nowrap; }
-.foundation-deck .make-deck-controls > span { font-size: 13px; color: #a9bcd4; }
+.foundation-slide-count, .shell-slide-count { font: 12px/1.5 monospace; color: #a9bcd4; white-space: nowrap; }
+.foundation-deck .make-deck-controls > span, .shell-deck .make-deck-controls > span { font-size: 13px; color: #a9bcd4; }
 .foundation-practice .request-guide-heading h3 { font-size: 21px; margin-top: 0; }
 .foundation-practice .lesson-controls label { flex-basis: 100%; }
 .foundation-practice .lesson-controls select { max-width: 100%; }
@@ -283,7 +283,7 @@
 .foundation-simulation .api-browser { margin-top: 0; }
 .foundation-simulation-content { min-width: 0; }
 @media(max-width:950px){.foundation-practice .practice-columns{grid-template-columns:minmax(0,1fr)}.foundation-practice .practice-detail{border-left:0;border-top:1px solid #41434b;padding:20px 0 0}}
-@media(max-width:700px){.foundation-practice .request-fields{grid-template-columns:minmax(0,1fr)}.foundation-deck .work-diagram{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){.foundation-practice .request-fields{grid-template-columns:minmax(0,1fr)}.foundation-deck .work-diagram,.shell-deck .work-diagram{grid-template-columns:minmax(0,1fr)}}
 .make-slide .work-diagram { padding: 0; margin: 0 0 16px; }
 .make-slide .work-diagram li + li { margin-top: 0; }
 @media(min-width:951px){.foundation-practice .practice-columns{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}}

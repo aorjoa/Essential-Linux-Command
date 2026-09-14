@@ -19,9 +19,9 @@ clean:
 \tremove-build
 `;
 export class Shell {
- constructor({projectName='project',files=null}={}){this.projectName=projectName;this.initialFiles=files;this.reset();}
+ constructor({projectName='project',files=null,defaultShell='bash'}={}){this.defaultShell=defaultShell;this.projectName=projectName;this.initialFiles=files;this.reset();}
  reset(){
-  this.cwd='/home/learner/'+this.projectName;this.projectRoot=this.cwd;this.home='/home/learner';this.shell='bash';this.env={HOME:this.home,USER:'learner',SHELL:'/bin/bash'};this.vars={};this.files=new Map();this.dirs=new Set(['/','/home',this.home,this.cwd,this.cwd+'/src',this.cwd+'/scripts']);this.clock=1;this.history=[];this.served=false;this.events=[];this.scriptStack=[];this.makeActive=false;
+  this.cwd='/home/learner/'+this.projectName;this.projectRoot=this.cwd;this.home='/home/learner';this.shell=this.defaultShell;this.env={HOME:this.home,USER:'learner',SHELL:'/bin/'+this.shell};this.vars={};this.files=new Map();this.dirs=new Set(['/','/home',this.home,this.cwd,this.cwd+'/src',this.cwd+'/scripts']);this.clock=1;this.history=[];this.served=false;this.events=[];this.scriptStack=[];this.makeActive=false;
   if(this.initialFiles){
    for(const [path,text] of Object.entries(this.initialFiles)){const parts=path.split('/');parts.pop();let dir=this.projectRoot;for(const part of parts){dir+='/'+part;this.dirs.add(dir);}this.write(path,text);}
    return;
